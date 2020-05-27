@@ -1,0 +1,547 @@
+#include <SFML/Graphics.hpp>
+#include <iostream>
+
+
+using namespace sf;
+using namespace std;
+
+
+int rozmiar_pola = 32;
+int plansza[100][100];
+int odkryta_plansza[100][100]; 
+int p1;
+int p2;
+int pierwszy_ruch;
+int znalezione_bomby = 0;
+
+
+struct pozycja
+{
+	int rzad;
+	int kolumna;
+};
+
+pozycja tab_pom[100];
+
+
+
+void Zbuduj_zakryta_plansze(int szerokosc, int wysokosc)
+{
+	for (int i = 1; i <= szerokosc; i++)
+	{
+		for (int j = 1; j <= wysokosc; j++)
+		{
+			odkryta_plansza[i][j] = 10;
+		}
+	}
+}
+
+void Losuj_bomby(int a, int b, int szerokosc, int wysokosc, int liczba_bomb) 
+{
+	for (int i = 1; i <= liczba_bomb; i++)
+	{
+		int x = rand() % szerokosc + 1;
+		int y = rand() % wysokosc + 1;
+		if (x == a && y == b)
+		{
+			int x = rand() % szerokosc + 1;
+			int y = rand() % wysokosc + 1;
+			plansza[x][y] = 9;
+		}
+		else
+		{
+			plansza[x][y] = 9;
+		}
+	}
+}
+
+void Wylicz_liczby_pol(int szerokosc, int wysokosc)
+{
+	for (int i = 1; i <= szerokosc; i++)
+	{
+		for (int j = 1; j <= wysokosc; j++)
+		{
+			if (plansza[i][j] != 9)
+			{
+				int bomby_wokol = 0;
+				if (plansza[i - 1][j - 1] == 9)
+				{
+					bomby_wokol++;
+				}
+				if (plansza[i - 1][j] == 9)
+				{
+					bomby_wokol++;
+				}
+				if (plansza[i - 1][j + 1] == 9)
+				{
+					bomby_wokol++;
+				}
+				if (plansza[i][j - 1] == 9)
+				{
+					bomby_wokol++;
+				}
+				if (plansza[i][j + 1] == 9)
+				{
+					bomby_wokol++;
+				}
+				if (plansza[i + 1][j - 1] == 9)
+				{
+					bomby_wokol++;
+				}
+				if (plansza[i + 1][j] == 9)
+				{
+					bomby_wokol++;
+				}
+				if (plansza[i + 1][j + 1] == 9)
+				{
+					bomby_wokol++;
+				}
+				plansza[i][j] = bomby_wokol;
+			}
+		}
+	}
+}
+
+void Sprawdz_pola_obok(int i, int j, int szerokosc, int wysokosc)
+{
+	odkryta_plansza[i][j] = 0;
+	if (plansza[i - 1][j - 1] == 0 && i - 1 > 0 && i - 1 <= szerokosc && j - 1 > 0 && j - 1 <= wysokosc)
+	{
+		tab_pom[p1].kolumna = i - 1;
+		tab_pom[p1].rzad = j - 1;
+		p1++;
+	}
+	if (plansza[i - 1][j] == 0 && i - 1 > 0 && i - 1 <= szerokosc && j > 0 && j <= wysokosc)
+	{
+		tab_pom[p1].kolumna = i - 1;
+		tab_pom[p1].rzad = j;
+		p1++;
+	}
+	if (plansza[i - 1][j + 1] == 0 && i - 1 > 0 && i - 1 <= szerokosc && j + 1 > 0 && j + 1 <= wysokosc)
+	{
+		tab_pom[p1].kolumna = i - 1;
+		tab_pom[p1].rzad = j + 1;
+		p1++;
+	}
+	if (plansza[i][j - 1] == 0 && i > 0 && i <= szerokosc && j - 1 > 0 && j - 1 <= wysokosc)
+	{
+		tab_pom[p1].kolumna = i;
+		tab_pom[p1].rzad = j - 1;
+		p1++;
+	}
+	if (plansza[i][j + 1] == 0 && i > 0 && i <= szerokosc && j + 1 > 0 && j + 1 <= wysokosc)
+	{
+		tab_pom[p1].kolumna = i;
+		tab_pom[p1].rzad = j + 1;
+		p1++;
+	}
+	if (plansza[i + 1][j - 1] == 0 && i + 1 > 0 && i + 1 <= szerokosc && j - 1 > 0 && j - 1 <= wysokosc)
+	{
+		tab_pom[p1].kolumna = i + 1;
+	    tab_pom[p1].rzad = j - 1;
+		p1++;
+	}
+	if (plansza[i + 1][j] == 0 && i + 1 > 0 && i + 1 <= szerokosc && j > 0 && j <= wysokosc)
+	{
+		tab_pom[p1].kolumna = i + 1;
+		tab_pom[p1].rzad = j;
+		p1++;
+	}
+	if (plansza[i + 1][j + 1] == 0 && i + 1 > 0 && i + 1 <= szerokosc && j + 1 > 0 && j + 1 <= wysokosc)
+	{
+		tab_pom[p1].kolumna = i + 1;
+		tab_pom[p1].rzad = j;
+		p1++;
+	}
+}
+
+void Pierwszy_ruch(int i, int j, int szerokosc, int wysokosc)
+{
+	if (plansza[i][j] == 0)
+	{
+		odkryta_plansza[i][j] = 0;
+		Sprawdz_pola_obok(i, j, szerokosc, wysokosc);
+		while (p2 < p1)
+		{
+			odkryta_plansza[tab_pom[p2].kolumna][tab_pom[p2].rzad] = 0;
+			p2++;
+		}
+	}
+	else
+	{
+		odkryta_plansza[i][j] = plansza[i][j];
+	}
+	if (plansza[i - 1][j - 1] != 9 && i - 1 > 0 && i - 1 <= szerokosc && j - 1 > 0 && j - 1 <= wysokosc)
+	{
+		if (plansza[i - 1][j - 1] == 0)
+		{
+			odkryta_plansza[i - 1][j - 1] = 0;
+			Sprawdz_pola_obok(i - 1, j - 1, szerokosc, wysokosc);
+			while (p2 < p1)
+			{
+				odkryta_plansza[tab_pom[p2].kolumna][tab_pom[p2].rzad] = 0;
+				p2++;
+			}
+		}
+		else
+		{
+			odkryta_plansza[i - 1][j - 1] = plansza[i - 1][j - 1];
+		}
+	}
+	if (plansza[i - 1][j] != 9 && i - 1 > 0 && i - 1 <= szerokosc && j > 0 && j <= wysokosc)
+	{
+		if (plansza[i - 1][j] == 0)
+		{
+			odkryta_plansza[i - 1][j] = 0;
+			Sprawdz_pola_obok(i - 1, j, szerokosc, wysokosc);
+			while (p2 < p1)
+			{
+				odkryta_plansza[tab_pom[p2].kolumna][tab_pom[p2].rzad] = 0;
+				p2++;
+			}
+		}
+		else
+		{
+			odkryta_plansza[i - 1][j] = plansza[i - 1][j];
+		}
+	}
+	if (plansza[i - 1][j + 1] != 9 && i - 1 > 0 && i - 1 <= szerokosc && j + 1 > 0 && j + 1 <= wysokosc)
+	{
+		if (plansza[i - 1][j + 1] == 0)
+		{
+			odkryta_plansza[i - 1][j + 1] = 0;
+			Sprawdz_pola_obok(i - 1, j + 1, szerokosc, wysokosc);
+			while (p2 < p1)
+			{
+				odkryta_plansza[tab_pom[p2].kolumna][tab_pom[p2].rzad] = 0;
+				p2++;
+			}
+		}
+		else
+		{
+			odkryta_plansza[i - 1][j + 1] = plansza[i - 1][j + 1];
+		}
+	}
+	if (plansza[i][j - 1] != 9 && i > 0 && i <= szerokosc && j - 1 > 0 && j - 1 <= wysokosc)
+	{
+		if (plansza[i][j - 1] == 0)
+		{
+			odkryta_plansza[i][j - 1] = 0;
+			Sprawdz_pola_obok(i, j - 1, szerokosc, wysokosc);
+			while (p2 < p1)
+			{
+				odkryta_plansza[tab_pom[p2].kolumna][tab_pom[p2].rzad] = 0;
+				p2++;
+			}
+		}
+		else
+		{
+			odkryta_plansza[i][j - 1] = plansza[i - 1][j - 1];
+		}
+	}
+	if (plansza[i][j + 1] != 9 && i > 0 && i <= szerokosc && j + 1 > 0 && j + 1 <= wysokosc)
+	{
+		if (plansza[i][j + 1] == 0)
+		{
+			odkryta_plansza[i][j + 1] = 0;
+			Sprawdz_pola_obok(i, j + 1, szerokosc, wysokosc);
+			while (p2 < p1)
+			{
+				odkryta_plansza[tab_pom[p2].kolumna][tab_pom[p2].rzad] = 0;
+				p2++;
+			}
+		}
+		else
+		{
+			odkryta_plansza[i][j + 1] = plansza[i + 1][j + 1];
+		}
+	}
+	if (plansza[i + 1][j - 1] != 9 && i + 1 > 0 && i + 1 <= szerokosc && j - 1 > 0 && j - 1 <= wysokosc)
+	{
+		if (plansza[i + 1][j - 1] == 0)
+		{
+			odkryta_plansza[i + 1][j - 1] = 0;
+			Sprawdz_pola_obok(i + 1, j - 1, szerokosc, wysokosc);
+			while (p2 < p1)
+			{
+				odkryta_plansza[tab_pom[p2].kolumna][tab_pom[p2].rzad] = 0;
+				p2++;
+			}
+		}
+		else
+		{
+			odkryta_plansza[i + 1][j - 1] = plansza[i + 1][j - 1];
+		}
+	}
+if (plansza[i + 1][j] != 9 && i + 1 > 0 && i + 1 <= szerokosc && j > 0 && j <= wysokosc)
+{
+	if (plansza[i + 1][j] == 0)
+	{
+		odkryta_plansza[i + 1][j] = 0;
+		Sprawdz_pola_obok(i + 1, j, szerokosc, wysokosc);
+		while (p2 < p1)
+		{
+			odkryta_plansza[tab_pom[p2].kolumna][tab_pom[p2].rzad] = 0;
+			p2++;
+		}
+	}
+	else
+	{
+		odkryta_plansza[i + 1][j] = plansza[i + 1][j];
+	}
+}
+if (plansza[i + 1][j + 1] != 9 && i + 1 > 0 && i + 1 <= szerokosc && j + 1 > 0 && j + 1 <= wysokosc)
+{
+	if (plansza[i + 1][j + 1] == 0)
+	{
+		odkryta_plansza[i + 1][j + 1] = 0;
+		Sprawdz_pola_obok(i + 1, j + 1, szerokosc, wysokosc);
+		while (p2 < p1)
+		{
+			odkryta_plansza[tab_pom[p2].kolumna][tab_pom[p2].rzad] = 0;
+			p2++;
+		}
+	}
+	else
+	{
+		odkryta_plansza[i + 1][j + 1] = plansza[i + 1][j + 1];
+	}
+}
+if (plansza[i - 1][j + 2] != 9 && i - 1 > 0 && i - 1 <= szerokosc && j + 2 > 0 && j + 2 <= wysokosc)
+{
+	if (plansza[i - 1][j + 2] == 0)
+	{
+		odkryta_plansza[i - 1][j + 2] = 0;
+		Sprawdz_pola_obok(i - 1, j + 2, szerokosc, wysokosc);
+		while (p2 < p1)
+		{
+			odkryta_plansza[tab_pom[p2].kolumna][tab_pom[p2].rzad] = 0;
+			p2++;
+		}
+	}
+	else
+	{
+		odkryta_plansza[i - 1][j + 2] = plansza[i - 1][j + 2];
+	}
+}
+if (plansza[i][j + 2] != 9 && i > 0 && i <= szerokosc && j + 2 > 0 && j + 2 <= wysokosc)
+{
+	if (plansza[i][j + 2] == 0)
+	{
+		odkryta_plansza[i][j + 2] = 0;
+		Sprawdz_pola_obok(i, j + 2, szerokosc, wysokosc);
+		while (p2 < p1)
+		{
+			odkryta_plansza[tab_pom[p2].kolumna][tab_pom[p2].rzad] = 0;
+			p2++;
+		}
+	}
+	else
+	{
+		odkryta_plansza[i][j + 2] = plansza[i][j + 2];
+	}
+}
+if (plansza[i + 1][j + 2] != 9 && i + 1 > 0 && i + 1 <= szerokosc && j + 2 > 0 && j + 2 <= wysokosc)
+{
+	if (plansza[i + 1][j + 2] == 0)
+	{
+		odkryta_plansza[i + 1][j + 2] = 0;
+		Sprawdz_pola_obok(i + 1, j + 2, szerokosc, wysokosc);
+		while (p2 < p1)
+		{
+			odkryta_plansza[tab_pom[p2].kolumna][tab_pom[p2].rzad] = 0;
+			p2++;
+		}
+	}
+	else
+	{
+		odkryta_plansza[i + 1][j + 2] = plansza[i + 1][j + 2];
+	}
+}
+}
+
+
+pozycja Podpowiedz(int szerokosc, int wysokosc)
+{
+	int szansa = 0;
+	int tablica_szans[100][100];
+	int pom = 999;
+	pozycja pomoc;
+	pomoc.rzad = 0;
+	pomoc.kolumna = 0; 
+	pozycja wybierz;
+
+	for (int i = 1; i <= szerokosc; i++)
+	{
+		for (int j = 1; j <= wysokosc; j++)
+		{
+			if (odkryta_plansza[i][j] == 10)
+			{
+				szansa = 0;
+				if (odkryta_plansza[i - 1][j - 1] != 10 && odkryta_plansza[i - 1][j - 1] != 11 && i-1 > 0 && j-1 > 0) { szansa = szansa + odkryta_plansza[i - 1][j - 1]; }
+				if (odkryta_plansza[i - 1][j] != 10 && odkryta_plansza[i - 1][j] != 11 && i-1 > 0 ) { szansa = szansa + odkryta_plansza[i - 1][j]; }
+				if (odkryta_plansza[i - 1][j + 1] != 10 && odkryta_plansza[i - 1][j + 1] != 11 && i - 1 > 0 && j + 1<szerokosc+1) { szansa = szansa + odkryta_plansza[i - 1][j + 1]; }
+				if (odkryta_plansza[i][j + 1] != 10 && odkryta_plansza[i][j + 1] != 11 && j + 1 < szerokosc+1) { szansa = szansa + odkryta_plansza[i][j + 1]; }
+				if (odkryta_plansza[i + 1][j + 1] != 10 && odkryta_plansza[i + 1][j + 1] != 11 && i+1 < wysokosc+1 && j + 1 < szerokosc + 1) { szansa = szansa + odkryta_plansza[i + 1][j + 1]; }
+				if (odkryta_plansza[i + 1][j] != 10 && odkryta_plansza[i + 1][j] != 11 && i+1 <wysokosc + 1) { szansa = szansa + odkryta_plansza[i + 1][j]; }
+				if (odkryta_plansza[i + 1][j - 1] != 10 && odkryta_plansza[i + 1][j - 1] != 11 && i + 1 < wysokosc + 1 && j-1 > 0) { szansa = szansa + odkryta_plansza[i + 1][j - 1]; }
+				if (odkryta_plansza[i][j - 1] != 10 && odkryta_plansza[i][j - 1] != 11 && j - 1 > 0) { szansa = szansa + odkryta_plansza[i][j - 1]; }
+				tablica_szans[i][j] = szansa;
+				
+			}
+			if (odkryta_plansza[i][j] != 10)
+			{
+				tablica_szans[i][j] = 1000;
+			}
+			
+		}
+	}
+
+
+	
+	for (int i = 1; i <= szerokosc; i++)
+	{
+		for (int j = 1; j <= wysokosc; j++)
+		{
+			if (tablica_szans[i][j] != 1000 && tablica_szans[i][j] != 0 &&  pom > tablica_szans[i][j])
+			{
+				pomoc.rzad = i;
+				pomoc.kolumna = j;
+				pom = tablica_szans[i][j];
+			}
+
+		}
+		
+	}
+	;
+
+	wybierz.rzad = pomoc.rzad;
+	wybierz.kolumna = pomoc.kolumna;
+	
+
+	return wybierz;
+}
+
+int main()
+{
+	int szerokosc;
+	int wysokosc;
+	int liczba_bomb;
+	cout << "Podaj szerokosc planszy" << endl;
+	cin >> szerokosc;
+	cout << endl;
+    cout << "Podaj wysokosc planszy" << endl;
+    cin >> wysokosc;
+	cout << endl;
+	cout << "Podaj liczbe bomb" << endl;
+	cin >> liczba_bomb;
+	cout << endl;
+	RenderWindow okno(VideoMode(80 + szerokosc*32, 180 + wysokosc*32), "Saper");
+    Texture pola;
+	pola.loadFromFile("kafelki.jpg");
+	Texture zwyciestwo_obrazek;
+	zwyciestwo_obrazek.loadFromFile("wygrana.jpg");
+	int podpow=0;
+
+	Sprite sprite(pola);
+	
+	Zbuduj_zakryta_plansze(szerokosc, wysokosc);
+
+	while (okno.isOpen())
+	{
+		
+		Vector2i pos = Mouse::getPosition(okno);
+		int x = pos.x / rozmiar_pola;
+		int y = pos.y / rozmiar_pola;
+		Event e;
+		while (okno.pollEvent(e))
+		{
+			if (e.type == Event::Closed)
+			{
+				okno.close();
+			}
+			if (e.type == Event::MouseButtonPressed)
+			{
+				if (e.key.code == Mouse::Left)
+				{
+					if (pierwszy_ruch == 0)
+					{
+						Losuj_bomby(x, y, szerokosc, wysokosc, liczba_bomb);
+						Wylicz_liczby_pol(szerokosc, wysokosc);
+						Pierwszy_ruch(x, y, szerokosc, wysokosc);
+						pierwszy_ruch = 1;
+						podpow = 0;
+					}
+					else if (plansza[x][y] == 0)
+					{
+						Sprawdz_pola_obok(x, y, szerokosc, wysokosc);
+						while (p2 < p1)
+						{
+							odkryta_plansza[tab_pom[p2].kolumna][tab_pom[p2].rzad] = 0;
+							p2++;
+							podpow = 0;
+						}
+					}
+					else
+					{
+						odkryta_plansza[x][y] = plansza[x][y];
+						podpow = 0;
+					}
+				}
+
+
+
+				else if (e.key.code == Mouse::Right)
+				{
+					if (odkryta_plansza[x][x] == 11)
+					{
+						odkryta_plansza[x][y] = 10;
+					}
+					else if (odkryta_plansza[x][y] > 9)
+					{
+						odkryta_plansza[x][y] = 11;
+					}
+					if (plansza[x][y] == 9)
+					{
+						znalezione_bomby++;
+					}
+				}
+			}
+		}
+		okno.clear(Color::White);
+		if (znalezione_bomby == liczba_bomb)
+		{
+			Sprite zwyciestwo(zwyciestwo_obrazek);
+			zwyciestwo.setTexture(zwyciestwo_obrazek);
+			okno.draw(zwyciestwo);
+			okno.display();
+		}
+		else
+		{
+			for (int i = 1; i <= szerokosc; i++)
+			{
+				for (int j = 1; j <= wysokosc; j++)
+				{
+					if (odkryta_plansza[x][y] == 9)
+					{
+						odkryta_plansza[i][j] = plansza[i][j];
+					}
+
+					if (pierwszy_ruch==1 && (e.type == sf::Event::KeyPressed) && (e.key.code == sf::Keyboard::F1) &&podpow==0)
+					{
+						pozycja wybor = Podpowiedz(szerokosc, wysokosc);
+						odkryta_plansza[wybor.rzad][wybor.kolumna]=12;
+						podpow = 1;
+					}
+
+					sprite.setTextureRect(IntRect(odkryta_plansza[i][j] * rozmiar_pola, 0, rozmiar_pola, rozmiar_pola));
+					sprite.setPosition(i * rozmiar_pola, j * rozmiar_pola);
+					okno.draw(sprite);
+				}
+			}
+			okno.display();
+		}
+	}
+	return 0;
+
+}
